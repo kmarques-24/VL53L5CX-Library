@@ -4,4 +4,4 @@ url: "https://github.com/RJRP44/VL53L5CX-Library"
 repository: "https://github.com/RJRP44/VL53L5CX-Library"
 license: "BSD-3-Clause"
 dependencies:
-  idf: ">=5.4"
+  idf: ">=5.1" #">=5.4"

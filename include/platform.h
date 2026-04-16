@@ -21,7 +21,8 @@ extern "C" {
 
 #include <stdint.h>
 #include <string.h>
-#include <driver/i2c_master.h>
+//#include <driver/i2c_master.h>
+#include <driver/i2c.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/gpio.h>
@@ -32,8 +33,10 @@ extern "C" {
 
 typedef struct
 {
-    i2c_master_dev_handle_t handle;
-    i2c_master_bus_config_t bus_config;
+    //i2c_master_dev_handle_t handle;
+    //i2c_master_bus_config_t bus_config;
+    i2c_port_t port;
+    i2c_config_t config;
     uint16_t address;
     gpio_num_t reset_gpio;
 

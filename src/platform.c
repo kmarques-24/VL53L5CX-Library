@@ -10,7 +10,6 @@
   ******************************************************************************
   */
 
-
 #include "platform.h"
 
 //Use the timeout from the config, the default timeout is -1
@@ -27,6 +26,7 @@
 #define VL53L5CX_RESET_LEVEL 0
 #endif
 
+/*
 uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size) {
 
     //Select the correct buffer
@@ -45,6 +45,28 @@ uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress,
 
     return i2c_master_multi_buffer_transmit(p_platform->handle, i2c_buffers, 2, VL53L5CX_I2C_TIMEOUT);
 }
+*/
+
+uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size)
+{
+    uint8_t buffer[size + 2];
+
+    // Register address (big endian)
+    buffer[0] = RegisterAdress >> 8;
+    buffer[1] = RegisterAdress & 0xFF;
+
+    memcpy(&buffer[2], p_values, size);
+
+    esp_err_t ret = i2c_master_write_to_device(
+        p_platform->port,
+        p_platform->address,
+        buffer,
+        size + 2,
+        pdMS_TO_TICKS(VL53L5CX_I2C_TIMEOUT)
+    );
+
+    return (ret == ESP_OK) ? 0 : 1;
+}
 
 uint8_t VL53L5CX_WrByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t value) {
 
@@ -52,12 +74,34 @@ uint8_t VL53L5CX_WrByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, 
     return VL53L5CX_WrMulti(p_platform, RegisterAdress, &value, 1);
 }
 
+/*
 uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size) {
 
     //Add index to the data
     uint8_t i2c_address[] = {RegisterAdress >> 8, RegisterAdress & 0xFF};
 
     return i2c_master_transmit_receive(p_platform->handle, i2c_address, 2, p_values, size, VL53L5CX_I2C_TIMEOUT);
+}
+*/
+
+uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size)
+{
+    uint8_t reg[2];
+
+    reg[0] = RegisterAdress >> 8;
+    reg[1] = RegisterAdress & 0xFF;
+
+    esp_err_t ret = i2c_master_write_read_device(
+        p_platform->port,
+        p_platform->address,
+        reg,
+        2,
+        p_values,
+        size,
+        pdMS_TO_TICKS(VL53L5CX_I2C_TIMEOUT)
+    );
+
+    return (ret == ESP_OK) ? 0 : 1;
 }
 
 uint8_t VL53L5CX_RdByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_value) {

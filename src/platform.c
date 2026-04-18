@@ -26,34 +26,18 @@
 #define VL53L5CX_RESET_LEVEL 0
 #endif
 
-/*
-uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size) {
-
-    //Select the correct buffer
-    i2c_master_transmit_multi_buffer_info_t i2c_buffers[2];
-
-    //Convert the uint16 address to an array of uint8
-    uint8_t i2c_address[] = {RegisterAdress >> 8, RegisterAdress & 0xFF};
-
-    //Add the address first to the data format
-    i2c_buffers[0].write_buffer = i2c_address;
-    i2c_buffers[0].buffer_size = 2;
-
-    //Add the content to the data format
-    i2c_buffers[1].write_buffer = p_values;
-    i2c_buffers[1].buffer_size = size;
-
-    return i2c_master_multi_buffer_transmit(p_platform->handle, i2c_buffers, 2, VL53L5CX_I2C_TIMEOUT);
-}
-*/
-
-uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size)
+uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAddress, uint8_t *p_values, uint32_t size)
 {
-    uint8_t buffer[size + 2];
+    //uint8_t buffer[size + 2];
+    uint8_t *buffer = (uint8_t*)malloc(size + 2); // allocate in heap to avoid stack overflow
+    if (!buffer) 
+    {
+        return 1; // status not ok, failed to allocate
+    }
 
     // Register address (big endian)
-    buffer[0] = RegisterAdress >> 8;
-    buffer[1] = RegisterAdress & 0xFF;
+    buffer[0] = RegisterAddress >> 8;
+    buffer[1] = RegisterAddress & 0xFF;
 
     memcpy(&buffer[2], p_values, size);
 
@@ -65,31 +49,23 @@ uint8_t VL53L5CX_WrMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress,
         pdMS_TO_TICKS(VL53L5CX_I2C_TIMEOUT)
     );
 
+    free(buffer); // added
+
     return (ret == ESP_OK) ? 0 : 1;
 }
 
-uint8_t VL53L5CX_WrByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t value) {
+uint8_t VL53L5CX_WrByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAddress, uint8_t value) {
 
     //Write a single byte
-    return VL53L5CX_WrMulti(p_platform, RegisterAdress, &value, 1);
+    return VL53L5CX_WrMulti(p_platform, RegisterAddress, &value, 1);
 }
 
-/*
-uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size) {
-
-    //Add index to the data
-    uint8_t i2c_address[] = {RegisterAdress >> 8, RegisterAdress & 0xFF};
-
-    return i2c_master_transmit_receive(p_platform->handle, i2c_address, 2, p_values, size, VL53L5CX_I2C_TIMEOUT);
-}
-*/
-
-uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_values, uint32_t size)
+uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAddress, uint8_t *p_values, uint32_t size)
 {
     uint8_t reg[2];
 
-    reg[0] = RegisterAdress >> 8;
-    reg[1] = RegisterAdress & 0xFF;
+    reg[0] = RegisterAddress >> 8;
+    reg[1] = RegisterAddress & 0xFF;
 
     esp_err_t ret = i2c_master_write_read_device(
         p_platform->port,
@@ -104,10 +80,10 @@ uint8_t VL53L5CX_RdMulti(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress,
     return (ret == ESP_OK) ? 0 : 1;
 }
 
-uint8_t VL53L5CX_RdByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAdress, uint8_t *p_value) {
+uint8_t VL53L5CX_RdByte(VL53L5CX_Platform *p_platform, uint16_t RegisterAddress, uint8_t *p_value) {
 
     //Read a single byte
-    return VL53L5CX_RdMulti(p_platform, RegisterAdress, p_value, 1);
+    return VL53L5CX_RdMulti(p_platform, RegisterAddress, p_value, 1);
 }
 
 uint8_t VL53L5CX_Reset_Sensor(VL53L5CX_Platform* p_platform)
@@ -139,7 +115,7 @@ void VL53L5CX_SwapBuffer(uint8_t *buffer, uint16_t size) {
 }
 
 uint8_t VL53L5CX_WaitMs(VL53L5CX_Platform *p_platform, uint32_t TimeMs) {
-    vTaskDelay(TimeMs / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(TimeMs));
 
     return ESP_OK;
 }
